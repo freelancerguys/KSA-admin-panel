@@ -4,9 +4,11 @@ export default function ActivitiesPage() {
   return (
     <CmsPage
       title="Activities"
-      subtitle="Post recent academy events and training activities."
+      subtitle="Add, edit, and post academy events and training activities."
       endpoint="activities"
       fields={['title', 'caption', 'description']}
+      dateFields={['eventDate']}
+      numberFields={['order']}
     />
   );
 }

@@ -17,7 +17,11 @@ export default function PaymentsPage() {
 
   const approve = useMutation({
     mutationFn: (id) => api.patch(`/payments/${id}/approve`),
-    onSuccess: () => qc.invalidateQueries(['payments', 'admin-stats']),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payments'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-payments'] });
+    },
   });
 
   const reject = useMutation({

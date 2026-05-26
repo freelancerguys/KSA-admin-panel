@@ -6,7 +6,7 @@ export const getTheme = (mode = 'light') =>
       mode,
       primary: { main: '#FFD600', contrastText: '#111' },
       secondary: { main: '#111111', contrastText: '#FFD600' },
-      background: mode === 'dark' ? { default: '#0f0f0f', paper: '#1a1a1a' } : { default: '#f0f2f5', paper: '#fff' },
+      background: mode === 'dark' ? { default: '#0f0f0f', paper: '#1a1a1a' } : { default: '#f4f5f7', paper: '#fff' },
     },
     typography: { fontFamily: '"Inter", sans-serif' },
     shape: { borderRadius: 10 },

@@ -9,6 +9,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { api, getUploadUrl } from '../api/client';
 import { formatCurrency } from '../utils/currency';
 import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS } from '../constants/profileOptions';
+import ConfirmDialog from './ConfirmDialog';
 
 const normalizeGenderValue = (g) => {
   if (!g) return '';
@@ -34,6 +35,7 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
   const [photo, setPhoto] = useState(null);
   const [docs, setDocs] = useState([]);
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
+  const [statusConfirm, setStatusConfirm] = useState(false);
   const qc = useQueryClient();
 
   const { data: student, isLoading } = useQuery({
@@ -101,6 +103,16 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
       });
     },
   });
+
+  const handleSaveClick = () => {
+    if (!student) return;
+    const wasActive = student.user?.isActive !== false;
+    if (form.isActive !== wasActive) {
+      setStatusConfirm(true);
+      return;
+    }
+    save.mutate();
+  };
 
   const uploadDocs = useMutation({
     mutationFn: async () => {
@@ -294,10 +306,29 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={() => save.mutate()} disabled={save.isPending}>
+        <Button variant="contained" onClick={handleSaveClick} disabled={save.isPending}>
           {save.isPending ? 'Saving…' : 'Save All Changes'}
         </Button>
       </DialogActions>
+
+      <ConfirmDialog
+        open={statusConfirm}
+        title={form.isActive ? 'Activate student?' : 'Suspend student?'}
+        message={
+          form.isActive
+            ? `Allow ${form.fullName} to sign in and use the student portal again?`
+            : `Suspend ${form.fullName}? They will not be able to log in until reactivated.`
+        }
+        confirmLabel={form.isActive ? 'Activate' : 'Suspend'}
+        confirmColor={form.isActive ? 'success' : 'warning'}
+        onConfirm={() => {
+          setStatusConfirm(false);
+          save.mutate();
+        }}
+        onCancel={() => setStatusConfirm(false)}
+        loading={save.isPending}
+      />
+
       <Snackbar
         open={snack.open}
         autoHideDuration={4000}
