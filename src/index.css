@@ -1,0 +1,16 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* DataGrid horizontal scroll on small screens */
+.MuiDataGrid-root {
+  min-width: 0;
+}
