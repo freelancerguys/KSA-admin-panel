@@ -10,6 +10,8 @@ import { api, getUploadUrl } from '../api/client';
 import { formatCurrency } from '../utils/currency';
 import { GENDER_OPTIONS, BLOOD_GROUP_OPTIONS } from '../constants/profileOptions';
 import ConfirmDialog from './ConfirmDialog';
+import DocumentViewerDialog from './DocumentViewerDialog';
+import AddStudentDocumentsDialog from './AddStudentDocumentsDialog';
 
 const normalizeGenderValue = (g) => {
   if (!g) return '';
@@ -23,7 +25,8 @@ function TabPanel({ children, value, index }) {
 
 const emptyForm = () => ({
   fullName: '', email: '', phone: '', alternatePhone: '', address: '', studentId: '',
-  dateOfBirth: '', gender: '', bloodGroup: '', parentGuardianName: '', emergencyContact: '',
+  dateOfBirth: '', gender: '', bloodGroup: '', parentGuardianName: '', motherName: '', fatherName: '',
+  emergencyContact: '',
   personalBio: '', joiningDate: '', wbShooterId: '', nraiShooterId: '', shootingCategory: '',
   preferredWeaponType: '', assignedCoach: '', shootingExperience: '', competitionLevel: '',
   isCustomFeeEnabled: false, customMonthlyFee: '', feeDiscount: 0, feeDueDay: 5, isActive: true,
@@ -33,7 +36,8 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState(emptyForm());
   const [photo, setPhoto] = useState(null);
-  const [docs, setDocs] = useState([]);
+  const [addDocsOpen, setAddDocsOpen] = useState(false);
+  const [viewDoc, setViewDoc] = useState(null);
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' });
   const [statusConfirm, setStatusConfirm] = useState(false);
   const qc = useQueryClient();
@@ -57,6 +61,8 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
         gender: normalizeGenderValue(student.gender),
         bloodGroup: student.bloodGroup || '',
         parentGuardianName: student.parentGuardianName || '',
+        motherName: student.motherName || '',
+        fatherName: student.fatherName || '',
         emergencyContact: student.emergencyContact || '',
         personalBio: student.personalBio || '',
         joiningDate: student.joiningDate ? student.joiningDate.slice(0, 10) : '',
@@ -115,9 +121,9 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
   };
 
   const uploadDocs = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (pendingDocs) => {
       const fd = new FormData();
-      docs.forEach((d, i) => {
+      pendingDocs.forEach((d, i) => {
         fd.append('documents', d.file);
         fd.append(`docName_${i}`, d.name);
         fd.append(`docType_${i}`, d.type);
@@ -126,7 +132,15 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
     },
     onSuccess: () => {
       qc.invalidateQueries(['student', studentId]);
-      setDocs([]);
+      setAddDocsOpen(false);
+      setSnack({ open: true, message: 'Documents uploaded successfully', severity: 'success' });
+    },
+    onError: (err) => {
+      setSnack({
+        open: true,
+        message: err.response?.data?.message || 'Failed to upload documents',
+        severity: 'error',
+      });
     },
   });
 
@@ -197,6 +211,22 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
                     label="Parent / Guardian Name"
                     value={form.parentGuardianName}
                     onChange={set('parentGuardianName')}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Mother's Name"
+                    value={form.motherName}
+                    onChange={set('motherName')}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Father's Name"
+                    value={form.fatherName}
+                    onChange={set('fatherName')}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -283,22 +313,48 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
 
             <TabPanel value={tab} index={5}>
               <Stack spacing={2}>
-                {(student?.documents || []).map((doc) => (
-                  <Box key={doc._id} display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2">{doc.name} ({doc.type})</Typography>
-                    <Button size="small" href={getUploadUrl(doc.file)} target="_blank">View</Button>
-                  </Box>
-                ))}
-                <Divider />
-                <Button variant="outlined" component="label">
-                  Add Documents
-                  <input type="file" hidden multiple onChange={(e) => {
-                    setDocs(Array.from(e.target.files).map((f) => ({ file: f, name: f.name, type: 'certificate' })));
-                  }} />
-                </Button>
-                {docs.length > 0 && (
-                  <Button variant="contained" onClick={() => uploadDocs.mutate()}>Upload {docs.length} file(s)</Button>
+                <Alert severity="info" icon={false}>
+                  Student documents must be <strong>PDF</strong> format and smaller than <strong>1 MB</strong> each.
+                </Alert>
+
+                {(student?.documents || []).length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">
+                    No documents uploaded yet.
+                  </Typography>
+                ) : (
+                  (student?.documents || []).map((doc) => (
+                    <Box
+                      key={doc._id}
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      gap={2}
+                      px={1.5}
+                      py={1.25}
+                      border="1px solid"
+                      borderColor="divider"
+                      borderRadius={2}
+                    >
+                      <Box minWidth={0}>
+                        <Typography variant="body2" fontWeight={600} noWrap>
+                          {doc.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {doc.type}
+                        </Typography>
+                      </Box>
+                      <Button size="small" onClick={() => setViewDoc(doc)}>
+                        View
+                      </Button>
+                    </Box>
+                  ))
                 )}
+
+                <Divider />
+
+                <Button variant="outlined" onClick={() => setAddDocsOpen(true)}>
+                  Add Documents
+                </Button>
               </Stack>
             </TabPanel>
           </>
@@ -336,6 +392,20 @@ export default function StudentEditDialog({ studentId, open, onClose }) {
         message={snack.message}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         ContentProps={{ sx: snack.severity === 'error' ? { bgcolor: 'error.main' } : { bgcolor: 'success.main' } }}
+      />
+
+      <AddStudentDocumentsDialog
+        open={addDocsOpen}
+        onClose={() => setAddDocsOpen(false)}
+        onUpload={(pendingDocs) => uploadDocs.mutate(pendingDocs)}
+        uploading={uploadDocs.isPending}
+      />
+
+      <DocumentViewerDialog
+        open={!!viewDoc}
+        onClose={() => setViewDoc(null)}
+        title={viewDoc?.name}
+        url={viewDoc ? getUploadUrl(viewDoc.file) : ''}
       />
     </Dialog>
   );

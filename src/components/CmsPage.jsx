@@ -146,6 +146,18 @@ export default function CmsPage({
       : '';
 
   const columns = [
+    {
+      field: 'serial',
+      headerName: '#',
+      width: 72,
+      sortable: false,
+      filterable: false,
+      renderCell: ({ value }) => (
+        <Typography variant="body2" fontWeight={700} color="text.secondary">
+          {String(value).padStart(2, '0')}
+        </Typography>
+      ),
+    },
     ...fields.map((f) => ({
       field: f,
       headerName: FIELD_LABELS[f] || f,
@@ -192,12 +204,18 @@ export default function CmsPage({
     },
   ];
 
-  const rows = (data || []).map((item) => ({ ...item, id: item._id }));
+  const rows = (data || []).map((item, index) => ({ ...item, id: item._id, serial: index + 1 }));
+
+  const entryCount = rows.length;
 
   return (
     <PageShell
       title={title}
-      subtitle={subtitle || `Manage ${title.toLowerCase()} shown on the public website.`}
+      subtitle={
+        subtitle
+          ? `${subtitle} · ${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}`
+          : `${entryCount} ${entryCount === 1 ? 'entry' : 'entries'} shown on the public website when published.`
+      }
       action={
         <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
           Add New

@@ -119,9 +119,9 @@ export default function DashboardPage() {
           { title: 'Active Students', value: stats?.activeStudents, gradient: kpiGradients.active, icon: <MdOutlineSportsScore />, delay: 0.3 },
           { title: 'Inactive Students', value: stats?.inactiveStudents, gradient: kpiGradients.inactive, icon: <HiUserRemove />, delay: 0.35 },
         ].map((k) => (
-          <Grid item xs={12} sm={6} md={3} key={k.title}>
+          <Grid item xs={12} sm={6} md={3} key={k.title} sx={{ display: 'flex' }}>
             {statsLoading ? (
-              <Skeleton variant="rounded" height={148} sx={{ borderRadius: 3 }} />
+              <Skeleton variant="rounded" height={172} sx={{ borderRadius: 3, width: '100%' }} />
             ) : (
               <KpiCard
                 {...k}

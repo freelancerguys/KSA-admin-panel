@@ -5,13 +5,17 @@ import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
 
 export default function AdminProtectedRoute({ children }) {
-  const { isAuthenticated, user, setSession, logout } = useAuthStore();
+  const { isAuthenticated, user, refreshToken, setSession, logout } = useAuthStore();
   const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const validateSession = async () => {
+      if (!refreshToken && !isAuthenticated) {
+        if (!cancelled) setBootstrapped(true);
+        return;
+      }
       try {
         const res = await api.get('/auth/me');
         const u = res.data.data.user;
@@ -35,9 +39,9 @@ export default function AdminProtectedRoute({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [logout, setSession]);
+  }, [logout, setSession, refreshToken, isAuthenticated]);
 
-  if (!isAuthenticated && !bootstrapped) {
+  if (!bootstrapped) {
     return (
       <Box minHeight="40vh" display="flex" alignItems="center" justifyContent="center">
         <CircularProgress />
@@ -45,7 +49,7 @@ export default function AdminProtectedRoute({ children }) {
     );
   }
 
-  if (bootstrapped && (!isAuthenticated || user?.role !== 'admin')) {
+  if (!isAuthenticated || user?.role !== 'admin') {
     return <Navigate to="/login" replace />;
   }
 

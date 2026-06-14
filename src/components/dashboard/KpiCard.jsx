@@ -21,6 +21,8 @@ export default function KpiCard({
   const isUp = change >= 0;
   const sparkData = spark.length ? spark : [{ v: 0 }, { v: value * 0.4 }, { v: value * 0.7 }, { v: value }];
 
+  const hasChange = change !== undefined && change !== null;
+
   return (
     <Box
       component={motion.div}
@@ -30,12 +32,15 @@ export default function KpiCard({
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
       sx={{
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        height: 172,
         borderRadius: 3,
         overflow: 'hidden',
         background: gradient,
         color: '#fff',
         p: 2.5,
-        minHeight: 148,
         boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
         cursor: 'default',
         '&::after': {
@@ -47,33 +52,60 @@ export default function KpiCard({
         },
       }}
     >
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" position="relative" zIndex={1}>
-        <Box>
-          <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 600, letterSpacing: 0.5 }}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        position="relative"
+        zIndex={1}
+        flex={1}
+        minHeight={0}
+      >
+        <Box flex={1} minWidth={0} pr={1}>
+          <Typography
+            variant="caption"
+            noWrap
+            sx={{ opacity: 0.9, fontWeight: 600, letterSpacing: 0.5, display: 'block' }}
+          >
             {title}
           </Typography>
-          <Typography variant="h4" fontWeight={800} sx={{ mt: 0.5, lineHeight: 1.2 }}>
+          <Typography
+            variant="h4"
+            fontWeight={800}
+            noWrap
+            sx={{
+              mt: 0.5,
+              lineHeight: 1.2,
+              fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+            }}
+          >
             {prefix}
             <CountUp end={Number(value) || 0} decimals={decimals} duration={1.8} separator="," />
             {suffix}
           </Typography>
-          {change !== undefined && change !== null && (
-            <Box display="flex" alignItems="center" gap={0.5} mt={1}>
-              {isUp ? <TrendingUpIcon sx={{ fontSize: 16 }} /> : <TrendingDownIcon sx={{ fontSize: 16 }} />}
-              <Typography variant="caption" fontWeight={700}>
-                {isUp ? '+' : ''}
-                {change}%
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                {changeLabel}
-              </Typography>
-            </Box>
-          )}
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={0.5}
+            mt={0.75}
+            minHeight={22}
+            visibility={hasChange ? 'visible' : 'hidden'}
+          >
+            {isUp ? <TrendingUpIcon sx={{ fontSize: 16 }} /> : <TrendingDownIcon sx={{ fontSize: 16 }} />}
+            <Typography variant="caption" fontWeight={700} noWrap>
+              {isUp ? '+' : ''}
+              {change ?? 0}%
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.85 }} noWrap>
+              {changeLabel}
+            </Typography>
+          </Box>
         </Box>
         <Box
           sx={{
             width: 48,
             height: 48,
+            flexShrink: 0,
             borderRadius: 2,
             display: 'flex',
             alignItems: 'center',
@@ -85,7 +117,7 @@ export default function KpiCard({
           {icon}
         </Box>
       </Box>
-      <Box sx={{ height: 44, mt: 1.5, opacity: 0.55 }} position="relative" zIndex={1}>
+      <Box sx={{ height: 40, flexShrink: 0, opacity: 0.55 }} position="relative" zIndex={1}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={sparkData}>
             <Area type="monotone" dataKey="v" stroke="#fff" fill="rgba(255,255,255,0.25)" strokeWidth={2} />

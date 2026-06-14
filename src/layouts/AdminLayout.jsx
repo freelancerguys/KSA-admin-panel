@@ -37,6 +37,7 @@ import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
 import Logo from '../components/Logo';
 import NotificationBell from '../components/dashboard/NotificationBell';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const DRAWER_FULL = 248;
 const DRAWER_COLLAPSED = 76;
@@ -57,11 +58,14 @@ const nav = [
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const refreshToken = useAuthStore((s) => s.refreshToken);
 
   const drawerWidth = collapsed && !isMobile ? DRAWER_COLLAPSED : DRAWER_FULL;
 
@@ -72,8 +76,9 @@ export default function AdminLayout() {
   });
 
   const handleLogout = async () => {
+    setLogoutLoading(true);
     try {
-      await api.post('/auth/logout');
+      await api.post('/auth/logout', { refreshToken });
     } catch {
       /* ignore */
     }
@@ -218,13 +223,13 @@ export default function AdminLayout() {
                   color="secondary"
                   size="small"
                   startIcon={<LogoutIcon />}
-                  onClick={handleLogout}
+                  onClick={() => setLogoutOpen(true)}
                   sx={{ display: { xs: 'none', md: 'flex' } }}
                 >
                   Logout
                 </Button>
               </Tooltip>
-              <IconButton color="inherit" onClick={handleLogout} sx={{ display: { xs: 'flex', md: 'none' } }}>
+              <IconButton color="inherit" onClick={() => setLogoutOpen(true)} sx={{ display: { xs: 'flex', md: 'none' } }}>
                 <LogoutIcon />
               </IconButton>
             </Box>
@@ -243,6 +248,17 @@ export default function AdminLayout() {
           </Box>
         </Box>
       </Box>
+
+      <ConfirmDialog
+        open={logoutOpen}
+        title="Confirm logout"
+        message="Are you sure you want to log out of the admin panel?"
+        confirmLabel="Logout"
+        confirmColor="error"
+        loading={logoutLoading}
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={handleLogout}
+      />
     </Box>
   );
 }

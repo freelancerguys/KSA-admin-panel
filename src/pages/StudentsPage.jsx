@@ -11,7 +11,9 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import BlockIcon from '@mui/icons-material/Block';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import { api } from '../api/client';
+import { downloadIdCard } from '../utils/downloadIdCard';
 import PageShell from '../components/PageShell';
 import AdminDataGrid from '../components/AdminDataGrid';
 import { formatCurrency } from '../utils/currency';
@@ -26,6 +28,7 @@ export default function StudentsPage() {
   const [editId, setEditId] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [snack, setSnack] = useState('');
+  const [idCardLoadingId, setIdCardLoadingId] = useState(null);
   const [search, setSearch] = useState('');
   const [wbFilter, setWbFilter] = useState('');
   const [nraiFilter, setNraiFilter] = useState('');
@@ -138,6 +141,17 @@ export default function StudentsPage() {
     window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
   };
 
+  const handleDownloadIdCard = async (row) => {
+    try {
+      setIdCardLoadingId(row.id);
+      await downloadIdCard(api, { studentId: row.id, fallbackName: `KSA-ID-${row.studentId}` });
+    } catch (err) {
+      setSnack(err.response?.data?.message || 'Failed to download ID card');
+    } finally {
+      setIdCardLoadingId(null);
+    }
+  };
+
   const columns = [
     { field: 'studentId', headerName: 'Student ID', width: 110, minWidth: 100 },
     { field: 'fullName', headerName: 'Name', minWidth: 140, flex: 1, renderCell: ({ value }) => <CellText value={value} /> },
@@ -163,11 +177,21 @@ export default function StudentsPage() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 200,
+      width: 230,
       sortable: false,
       renderCell: ({ row }) => (
         <Stack direction="row" spacing={0.25}>
           <Tooltip title="Edit full profile"><IconButton size="small" onClick={() => setEditId(row.id)}><EditIcon fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Download ID card">
+            <IconButton
+              size="small"
+              color="primary"
+              disabled={idCardLoadingId === row.id}
+              onClick={() => handleDownloadIdCard(row)}
+            >
+              <BadgeOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="WhatsApp"><IconButton size="small" color="success" onClick={() => sendWhatsApp(row)}><WhatsAppIcon fontSize="small" /></IconButton></Tooltip>
           <Tooltip title="Reset password">
             <IconButton size="small" onClick={() => setConfirm({ type: 'reset', row })}>
