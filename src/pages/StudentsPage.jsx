@@ -9,6 +9,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import BlockIcon from '@mui/icons-material/Block';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
@@ -76,7 +77,15 @@ export default function StudentsPage() {
     mutationFn: (id) => api.post(`/students/${id}/reset-password`, { password: 'Student@123' }),
     onSuccess: () => {
       setConfirm(null);
-      setSnack('Password reset to Student@123');
+      setSnack('Password reset to Student@123. Account unlocked.');
+    },
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: (id) => api.post(`/students/${id}/unlock-account`),
+    onSuccess: () => {
+      setConfirm(null);
+      setSnack('Account unlocked');
     },
   });
 
@@ -90,13 +99,14 @@ export default function StudentsPage() {
   });
 
   const confirmLoading =
-    suspendMutation.isPending || resetMutation.isPending || deleteMutation.isPending;
+    suspendMutation.isPending || resetMutation.isPending || unlockMutation.isPending || deleteMutation.isPending;
 
   const handleConfirmAction = () => {
     if (!confirm) return;
     const { type, row } = confirm;
     if (type === 'delete') deleteMutation.mutate(row.id);
     if (type === 'reset') resetMutation.mutate(row.id);
+    if (type === 'unlock') unlockMutation.mutate(row.id);
     if (type === 'suspend') suspendMutation.mutate({ id: row.id, isActive: row.nextActive });
   };
 
@@ -114,9 +124,17 @@ export default function StudentsPage() {
     if (type === 'reset') {
       return {
         title: 'Reset password?',
-        message: `Reset login password for ${row.fullName} to the default: Student@123? They will need to use this on next login.`,
+        message: `Reset login password for ${row.fullName} to the default: Student@123? This also unlocks the account if it was locked.`,
         confirmLabel: 'Reset password',
         confirmColor: 'warning',
+      };
+    }
+    if (type === 'unlock') {
+      return {
+        title: 'Unlock account?',
+        message: `Unlock ${row.fullName}'s login? Their password will stay the same. Use this if they see "account temporarily locked".`,
+        confirmLabel: 'Unlock account',
+        confirmColor: 'primary',
       };
     }
     if (type === 'suspend') {
@@ -177,7 +195,7 @@ export default function StudentsPage() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 230,
+      width: 260,
       sortable: false,
       renderCell: ({ row }) => (
         <Stack direction="row" spacing={0.25}>
@@ -193,6 +211,11 @@ export default function StudentsPage() {
             </IconButton>
           </Tooltip>
           <Tooltip title="WhatsApp"><IconButton size="small" color="success" onClick={() => sendWhatsApp(row)}><WhatsAppIcon fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Unlock account">
+            <IconButton size="small" color="info" onClick={() => setConfirm({ type: 'unlock', row })}>
+              <LockOpenIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Reset password">
             <IconButton size="small" onClick={() => setConfirm({ type: 'reset', row })}>
               <LockResetIcon fontSize="small" />
